@@ -1,3 +1,4 @@
+package com.github.juliabennett
 
 /* TODO
 - Use mod N timestamps
@@ -10,22 +11,26 @@ case class Bucket(position: Long, sizeExp: Long) {
   override def toString = s"position=$position,sizeExp=$sizeExp"
 }
 
-case class Dgim(windowLength: Long, currentPosition: Long, buckets: Vector[Bucket] = Vector()) {
+case class Dgim(windowLength: Long, currentPosition: Long = 0, buckets: Vector[Bucket] = Vector()) {
+
+  def update(newElements: List[Int]): Dgim = {
+    newElements.foldLeft(this)((currentDgim, newElement) =>
+      currentDgim.update(newElement))
+  }
 
   def update(newElement: Int): Dgim = {
     val trimmedBuckets = trimBuckets()
     this.copy(
       currentPosition = currentPosition + 1,
       buckets = if (newElement == 0) trimmedBuckets
-                else addBucket(trimmedBuckets)
-    )
+                else addBucket(trimmedBuckets))
   }
 
   def query(k: Long): Long = scanAndCount(k, buckets)
 
   override def toString: String = {
     val bucketStr = buckets.mkString("[", ",", "]")
-    s"windowLength=$windowLength,currentPosition=$currentPosition,buckets=$bucketStr"
+    s"Dgim[windowLength=$windowLength,currentPosition=$currentPosition,buckets=$bucketStr]"
   }
 
   private def trimBuckets(): Vector[Bucket] = {
