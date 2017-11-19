@@ -8,7 +8,7 @@ package com.github.juliabennett
 case class Bucket(position: Long, sizeExp: Long) {
   def +(that: Bucket) = Bucket(math.max(this.position, that.position), this.sizeExp + 1)
 
-  override def toString = s"position=$position,sizeExp=$sizeExp"
+  override def toString = s"Bucket[position=$position,sizeExp=$sizeExp]"
 }
 
 case class Dgim(windowLength: Long, currentPosition: Long = 0, buckets: Vector[Bucket] = Vector()) {
