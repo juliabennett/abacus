@@ -1,70 +1,90 @@
 package com.github.juliabennett
 
-/* TODO
-- Use mod N timestamps
-- Extend to improved error bound
- */
+/** Data structure storing state of Datar-Gionis-Indyk-Motwani (DGIM) algorithm
+  *  for estimating number of ones in a window.
+  *
+  * @param windowLen Number of positions in window
+  * @param currentStreamPos Latest position in stream modulo window length
+  * @param buckets Vector of DGIM buckets describing current DGIM state
+  */
+case class Dgim(windowLen: Long, currentStreamPos: Long = -1, buckets: Vector[Bucket] = Vector()) {
 
-case class Bucket(position: Long, sizeExp: Long) {
-  def +(that: Bucket) = Bucket(math.max(this.position, that.position), this.sizeExp + 1)
-
-  override def toString = s"Bucket[position=$position,sizeExp=$sizeExp]"
-}
-
-case class Dgim(windowLength: Long, currentPosition: Long = 0, buckets: Vector[Bucket] = Vector()) {
-
+  /** Batch processes segment of binary stream
+    *
+    * @param newElements Segment of binary stream ordered from earliest to latest
+    * @return New Dgim instance reflecting updated state after processing stream segment
+    */
   def update(newElements: List[Int]): Dgim = newElements.foldLeft(this)(_ update _)
 
+  /** Processes new element in binary stream
+    *
+    * @param newElement Next element in binary stream
+    * @return New Dgim instance reflecting updated state after processing new element
+    */
   def update(newElement: Int): Dgim = {
+    val newStreamPos = (currentStreamPos + 1) % windowLen
     this.copy(
-      currentPosition = currentPosition + 1,
+      currentStreamPos = newStreamPos,
       buckets = if (newElement == 0) trimBuckets
-                else addBucket(trimBuckets))
+                else addBucket(trimBuckets, Bucket(newStreamPos, 0))
+    )
   }
 
-  def query(k: Long) = scanAndCount(k, buckets)
+  /** Applies DGIM algorithm to return approximate count of ones in previous k elements in binary stream
+    *
+    * @param k Positive integer not larger than number of positions in DGIM window
+    */
+  def query(k: Long): Long = scanAndCount(k, buckets)
 
   override def toString: String = {
     val bucketStr = buckets.mkString("[", ",", "]")
-    s"Dgim[windowLength=$windowLength,currentPosition=$currentPosition,buckets=$bucketStr]"
+    s"Dgim[windowLen=$windowLen,currentStreamPos=$currentStreamPos,buckets=$bucketStr]"
   }
 
-  private def trimBuckets(): Vector[Bucket] = {
-    buckets match {
-      case start :+ last if last.position + windowLength <= currentPosition + 1 => start
-      case _ => buckets
-    }
+  /* Returns DGIM buckets filtered to only include those that will be within window after next update. */
+  private def trimBuckets = buckets match {
+    case start :+ last if last.windowPos(windowLen, currentStreamPos) == 0 => start
+    case _ => buckets
   }
 
+  /* Adds bucket to head of DGIM tail. Updates tail to ensure DGIM conditions are preserved. */
   @scala.annotation.tailrec
   private def addBucket(
-      currentBuckets: Vector[Bucket],
-      newBucket: Bucket = Bucket(currentPosition + 1, 0),
+      bucketTail: Vector[Bucket],
+      newBucket: Bucket,
       bucketAcc: Vector[Bucket] = Vector()): Vector[Bucket] = {
 
-    currentBuckets match {
-      case first +: second +: tail if first.sizeExp == second.sizeExp =>
-        addBucket(tail, first + second, bucketAcc :+ newBucket)
-      case _ => (bucketAcc :+ newBucket) ++ currentBuckets
+    bucketTail match {
+      case first +: second +: tail if first.sizeExp == second.sizeExp => {
+        val mergedBucket = first.merge(second, windowLen, currentStreamPos)
+        addBucket(tail, mergedBucket, bucketAcc :+ newBucket)
+      }
+      case _ => (bucketAcc :+ newBucket) ++ bucketTail
     }
   }
 
+  /* Implementation of query in DGIM algorithm. Returns approximate count of ones that
+       are within intersection of DGIM tail and previous k elements in binary stream. */
   @scala.annotation.tailrec
-  private def scanAndCount(k: Long, currentBuckets: Vector[Bucket], acc: Long = 0): Long = {
-    currentBuckets match {
-      case first +: second +: tail if positionInRange(second.position, k) =>
+  private def scanAndCount(k: Long, bucketTail: Vector[Bucket], acc: Long = 0): Long = {
+    bucketTail match {
+      case first +: second +: tail if bucketInRange(second, k) =>
         scanAndCount(k, second +: tail, acc + computeSize(first.sizeExp))
-      case first +: tail if positionInRange(first.position, k) =>
+      case first +: tail if bucketInRange(first, k) =>
         acc + computeSize(first.sizeExp - 1)
       case _ => 0
     }
   }
 
-  private def positionInRange(position: Long, k: Long) = position > currentPosition - k
+  /* Returns true if bucket position is within previous k elements in binary stream */
+  private def bucketInRange(bucket: Bucket, k: Long): Boolean = {
+    bucket.windowPos(windowLen, currentStreamPos) >= windowLen - k
+  }
 
+  /* Computes bucket size as power of two. Negative input returns one as default value. */
   @scala.annotation.tailrec
   private def computeSize(sizeExp: Long, acc: Long = 1): Long = {
-    if (sizeExp == -1) 1
+    if (sizeExp < 0) 1
     else if (sizeExp == 0) acc
     else computeSize(sizeExp - 1, acc * 2)
   }

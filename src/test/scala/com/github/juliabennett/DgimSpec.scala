@@ -15,26 +15,26 @@ class DgimSpec extends FlatSpec {
     assert(Dgim(100).update(allZeroes).buckets == Vector())
 
     assert(Dgim(100).update(singleOne).buckets == Vector(
-      Bucket(1, 0)
+      Bucket(0, 0)
     ))
 
     assert(Dgim(100).update(allOnes).buckets == Vector(
-      Bucket(5, 0),
-      Bucket(4, 1),
-      Bucket(2, 1)
+      Bucket(4, 0),
+      Bucket(3, 1),
+      Bucket(1, 1)
     ))
 
     assert(Dgim(100).update(series1).buckets == Vector(
-      Bucket(12, 0),
-      Bucket(11, 1),
-      Bucket(9, 2)
+      Bucket(11, 0),
+      Bucket(10, 1),
+      Bucket(8, 2)
     ))
 
     assert(Dgim(100).update(series2).buckets == Vector(
-      Bucket(10, 0),
       Bucket(9, 0),
-      Bucket(8, 1),
-      Bucket(5, 1)
+      Bucket(8, 0),
+      Bucket(7, 1),
+      Bucket(4, 1)
     ))
   }
 
@@ -42,41 +42,43 @@ class DgimSpec extends FlatSpec {
 
     assert(Dgim(4).update(singleOne).buckets == Vector())
     assert(Dgim(5).update(singleOne).buckets == Vector(
-      Bucket(1, 0)
+      Bucket(0, 0)
     ))
 
     assert(Dgim(3).update(allOnes).buckets == Vector(
-      Bucket(5, 0),
-      Bucket(4, 1)
+      Bucket(1, 0),
+      Bucket(0, 1)
     ))
     assert(Dgim(2).update(allOnes).buckets == Vector(
-      Bucket(5, 0),
-      Bucket(4, 0)
+      Bucket(0, 0),
+      Bucket(1, 0)
     ))
 
     assert(Dgim(4).update(series1).buckets == Vector(
-      Bucket(12, 0),
-      Bucket(11, 0),
-      Bucket(10, 1)
+      Bucket(3, 0),
+      Bucket(2, 0),
+      Bucket(1, 1)
     ))
     assert(Dgim(7).update(series1).buckets == Vector(
-      Bucket(12, 0),
-      Bucket(11, 1),
-      Bucket(9, 1)
+      Bucket(4, 0),
+      Bucket(3, 1),
+      Bucket(1, 1)
     ))
 
     assert(Dgim(5).update(series2).buckets == Vector(
-      Bucket(10, 0),
-      Bucket(9, 0),
-      Bucket(8, 1)
+      Bucket(4, 0),
+      Bucket(3, 0),
+      Bucket(2, 1)
     ))
     assert(Dgim(3).update(series2).buckets == Vector(
-      Bucket(10, 0),
-      Bucket(9, 1)
+      Bucket(0, 0),
+      Bucket(2, 1)
     ))
   }
 
   it should "return approximate count of ones in window" in {
+
+    assert(Dgim(100).query(10) == 0)
 
     assert(Dgim(100).update(allZeroes).query(10) == 0)
 
