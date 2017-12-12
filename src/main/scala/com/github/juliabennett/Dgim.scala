@@ -4,10 +4,11 @@ package com.github.juliabennett
   *  for estimating number of ones in a window.
   *
   * @param windowLen Number of positions in window
+  * @param r Dgim precision parameter, where higher values of r have smaller error
   * @param currentStreamPos Latest position in stream modulo window length
   * @param buckets Vector of DGIM buckets describing current DGIM state
   */
-case class Dgim(windowLen: Long, currentStreamPos: Long = -1, buckets: Vector[Bucket] = Vector()) {
+case class Dgim(windowLen: Long, r: Int = 2, currentStreamPos: Long = -1, buckets: Vector[Bucket] = Vector()) {
 
   /** Batch processes segment of binary stream
     *
@@ -52,12 +53,17 @@ case class Dgim(windowLen: Long, currentStreamPos: Long = -1, buckets: Vector[Bu
   private def addBucket(
       bucketTail: Vector[Bucket],
       newBucket: Bucket,
-      bucketAcc: Vector[Bucket] = Vector()): Vector[Bucket] = {
+      bucketAcc: Vector[Bucket] = Vector(),
+      runningCounter: Int = 0): Vector[Bucket] = {
 
     bucketTail match {
       case first +: second +: tail if first.sizeExp == second.sizeExp => {
-        val mergedBucket = first.merge(second, windowLen, currentStreamPos)
-        addBucket(tail, mergedBucket, bucketAcc :+ newBucket)
+        if (runningCounter == r-2) {
+          val mergedBucket = first.merge(second, windowLen, currentStreamPos)
+          addBucket(tail, mergedBucket, bucketAcc :+ newBucket, 0)
+        } else {
+          addBucket(second +: tail, first, bucketAcc :+ newBucket, runningCounter + 1)
+        }
       }
       case _ => (bucketAcc :+ newBucket) ++ bucketTail
     }

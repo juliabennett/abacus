@@ -6,7 +6,7 @@ class DgimSpec extends FlatSpec {
 
   val allZeroes = List(0,0,0,0,0)
   val singleOne = List(1,0,0,0,0)
-  val allOnes = List(1,1,1,1,1)
+  val allOnes = List(1,1,1,1,1,1,1,1,1,1,1,1)
   val series1 = List(1,0,0,1,0,1,0,0,1,1,1,1)
   val series2 = List(0,0,1,0,1,1,0,1,1,1)
 
@@ -19,7 +19,27 @@ class DgimSpec extends FlatSpec {
     ))
 
     assert(Dgim(100).update(allOnes).buckets == Vector(
-      Bucket(4, 0),
+      Bucket(11, 0),
+      Bucket(10, 0),
+      Bucket(9, 1),
+      Bucket(7, 2),
+      Bucket(3, 2)
+    ))
+    assert(Dgim(100, 3).update(allOnes).buckets == Vector(
+      Bucket(11, 0),
+      Bucket(10, 0),
+      Bucket(9, 1),
+      Bucket(7, 1),
+      Bucket(5, 1),
+      Bucket(3, 2)
+    ))
+    assert(Dgim(100, 4).update(allOnes).buckets == Vector(
+      Bucket(11, 0),
+      Bucket(10, 0),
+      Bucket(9, 0),
+      Bucket(8, 0),
+      Bucket(7, 1),
+      Bucket(5, 1),
       Bucket(3, 1),
       Bucket(1, 1)
     ))
@@ -29,8 +49,21 @@ class DgimSpec extends FlatSpec {
       Bucket(10, 1),
       Bucket(8, 2)
     ))
+    assert(Dgim(100, 3).update(series1).buckets == Vector(
+      Bucket(11, 0),
+      Bucket(10, 0),
+      Bucket(9, 0),
+      Bucket(8, 1),
+      Bucket(3, 1)
+    ))
 
     assert(Dgim(100).update(series2).buckets == Vector(
+      Bucket(9, 0),
+      Bucket(8, 0),
+      Bucket(7, 1),
+      Bucket(4, 1)
+    ))
+    assert(Dgim(100, 3).update(series2).buckets == Vector(
       Bucket(9, 0),
       Bucket(8, 0),
       Bucket(7, 1),
@@ -105,4 +138,5 @@ class DgimSpec extends FlatSpec {
     assert(Dgim(5).update(series2).query(3) == 3)
     assert(Dgim(3).update(series2).query(3) == 2)
   }
+
 }
