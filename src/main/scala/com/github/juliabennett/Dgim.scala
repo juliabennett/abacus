@@ -1,10 +1,10 @@
 package com.github.juliabennett
 
 /** Data structure storing state of Datar-Gionis-Indyk-Motwani (DGIM) algorithm
-  *  for estimating number of ones in a window.
+  *  for approximating number of ones in a window of a binary stream.
   *
   * @param windowLen Number of positions in window
-  * @param r Dgim precision parameter, where higher values of r have smaller error
+  * @param r DGIM precision parameter, where higher values of r have smaller error
   * @param currentStreamPos Latest position in stream modulo window length
   * @param buckets Vector of DGIM buckets describing current DGIM state
   */
@@ -23,76 +23,80 @@ case class Dgim(windowLen: Long, r: Int = 2, currentStreamPos: Long = -1, bucket
     * @return New Dgim instance reflecting updated state after processing new element
     */
   def update(newElement: Int): Dgim = {
-    val newStreamPos = (currentStreamPos + 1) % windowLen
+    require(newElement == 0 || newElement == 1)
+    val nextStreamPosition = (currentStreamPos + 1) % windowLen
     this.copy(
-      currentStreamPos = newStreamPos,
+      currentStreamPos = nextStreamPosition,
       buckets = if (newElement == 0) trimBuckets
-                else addBucket(trimBuckets, Bucket(newStreamPos, 0))
-    )
+                else bucketsPlusOne(trimBuckets, nextStreamPosition))
   }
 
   /** Applies DGIM algorithm to return approximate count of ones in previous k elements in binary stream
     *
     * @param k Positive integer not larger than number of positions in DGIM window
     */
-  def query(k: Long): Long = scanAndCount(k, buckets)
+  def query(k: Long): Long = {
+    @scala.annotation.tailrec
+    def scanAndCount(k: Long, bucketListTail: Vector[Bucket], acc: Long = 0): Long = {
+      bucketListTail match {
+        case first +: second +: tail if bucketInRange(second, k) =>
+          scanAndCount(k, second +: tail, acc + computeSize(first))
+        case first +: tail if bucketInRange(first, k) =>
+          acc + ((computeSize(first) + 1)/2)
+        case _ => 0
+      }
+    }
+
+    require(k > 0 && k <= windowLen)
+    scanAndCount(k, buckets)
+  }
 
   override def toString: String = {
     val bucketStr = buckets.mkString("[", ",", "]")
-    s"Dgim[windowLen=$windowLen,currentStreamPos=$currentStreamPos,buckets=$bucketStr]"
+    s"Dgim[windowLen=$windowLen,r=$r,currentStreamPos=$currentStreamPos,buckets=$bucketStr]"
   }
 
-  /* Returns DGIM buckets filtered to only include those that will be within window after next update. */
-  private def trimBuckets = buckets match {
+  /* Returns inputted DGIM buckets plus a new bucket of size one at next position.
+      Completes merge process to maintain DGIM conditions. */
+  private def bucketsPlusOne(currentBuckets: Vector[Bucket], nextPosition: Long): Vector[Bucket] = {
+    @scala.annotation.tailrec
+    def joinBucketListSegments(bucketListTail: Vector[Bucket],
+                               middleBucket: Bucket,
+                               bucketListHead: Vector[Bucket],
+                               currentSizeCounter: Int = 0): Vector[Bucket] = {
+      bucketListTail match {
+        case first +: second +: tail if first.sizeExp == second.sizeExp =>
+          if (currentSizeCounter == r-2) {
+            val mergedBucket = first.merge(second, windowLen, currentStreamPos)
+            joinBucketListSegments(tail, mergedBucket, bucketListHead :+ middleBucket, 0)
+          } else {
+            joinBucketListSegments(second +: tail, first, bucketListHead :+ middleBucket, currentSizeCounter + 1)
+          }
+        case _ => (bucketListHead :+ middleBucket) ++ bucketListTail
+      }
+    }
+
+    joinBucketListSegments(currentBuckets, Bucket(nextPosition, 0), Vector())
+  }
+
+  /* Returns current buckets filtered to only include those that will be within window after next update. */
+  private def trimBuckets: Vector[Bucket] = buckets match {
     case start :+ last if last.windowPos(windowLen, currentStreamPos) == 0 => start
     case _ => buckets
   }
 
-  /* Adds bucket to head of DGIM tail. Updates tail to ensure DGIM conditions are preserved. */
-  @scala.annotation.tailrec
-  private def addBucket(
-      bucketTail: Vector[Bucket],
-      newBucket: Bucket,
-      bucketAcc: Vector[Bucket] = Vector(),
-      runningCounter: Int = 0): Vector[Bucket] = {
-
-    bucketTail match {
-      case first +: second +: tail if first.sizeExp == second.sizeExp => {
-        if (runningCounter == r-2) {
-          val mergedBucket = first.merge(second, windowLen, currentStreamPos)
-          addBucket(tail, mergedBucket, bucketAcc :+ newBucket, 0)
-        } else {
-          addBucket(second +: tail, first, bucketAcc :+ newBucket, runningCounter + 1)
-        }
-      }
-      case _ => (bucketAcc :+ newBucket) ++ bucketTail
-    }
-  }
-
-  /* Implementation of query in DGIM algorithm. Returns approximate count of ones that
-       are within intersection of DGIM tail and previous k elements in binary stream. */
-  @scala.annotation.tailrec
-  private def scanAndCount(k: Long, bucketTail: Vector[Bucket], acc: Long = 0): Long = {
-    bucketTail match {
-      case first +: second +: tail if bucketInRange(second, k) =>
-        scanAndCount(k, second +: tail, acc + computeSize(first.sizeExp))
-      case first +: tail if bucketInRange(first, k) =>
-        acc + computeSize(first.sizeExp - 1)
-      case _ => 0
-    }
-  }
-
-  /* Returns true if bucket position is within previous k elements in binary stream */
+  /* Returns true if bucket position is within previous k elements in binary stream. */
   private def bucketInRange(bucket: Bucket, k: Long): Boolean = {
     bucket.windowPos(windowLen, currentStreamPos) >= windowLen - k
   }
 
-  /* Computes bucket size as power of two. Negative input returns one as default value. */
-  @scala.annotation.tailrec
-  private def computeSize(sizeExp: Long, acc: Long = 1): Long = {
-    if (sizeExp < 0) 1
-    else if (sizeExp == 0) acc
-    else computeSize(sizeExp - 1, acc * 2)
+  /* Returns size of bucket. */
+  private def computeSize(bucket: Bucket): Long = {
+    @scala.annotation.tailrec
+    def powTwo(sizeExp: Long, acc: Long = 1): Long = {
+      if (sizeExp == 0) acc
+      else powTwo(sizeExp - 1, acc * 2)
+    }
+    powTwo(bucket.sizeExp)
   }
-
 }
