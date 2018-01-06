@@ -1,4 +1,4 @@
-package com.github.juliabennett
+package abacus.dgim
 
 /** DGIM Bucket
   *

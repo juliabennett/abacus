@@ -1,4 +1,4 @@
-package com.github.juliabennett
+package abacus.dgim
 
 import org.scalatest.FlatSpec
 

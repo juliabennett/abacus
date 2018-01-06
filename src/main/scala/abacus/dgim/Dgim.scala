@@ -1,4 +1,4 @@
-package com.github.juliabennett
+package abacus.dgim
 
 /** Data structure storing state of Datar-Gionis-Indyk-Motwani (DGIM) algorithm
   *  for approximating number of ones in a window of a binary stream.
@@ -50,6 +50,8 @@ case class Dgim(windowLen: Long, r: Int = 2, currentStreamPos: Long = -1, bucket
     require(k > 0 && k <= windowLen)
     scanAndCount(k, buckets)
   }
+
+  def isEmpty: Boolean = buckets.isEmpty
 
   override def toString: String = {
     val bucketStr = buckets.mkString("[", ",", "]")
