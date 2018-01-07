@@ -11,9 +11,6 @@ object DgimActor {
   /* Message to tell DgimActor observed labels from latest position. */
   final case class Update(labels: Set[String])
 
-  /* Message to ask DgimActor for DGIM states of specific labels. */
-  final case class Query(k: Long, labels: Set[String])
-
   /* Message to ask DgimActor for DGIM states of all active labels. */
   final case class QueryAll(k: Long)
 
@@ -34,7 +31,6 @@ class DgimActor(windowLength: Long, r: Int) extends Actor {
   /* Implementation of receive method for communicating with actor. */
   def receive: PartialFunction[Any, Unit] = {
     case Update(labels) => update(labels)
-    case Query(k, labels) => sender ! query(k, labels)
     case QueryAll(k) => sender ! query(k)
   }
 
@@ -51,28 +47,16 @@ class DgimActor(windowLength: Long, r: Int) extends Actor {
     // Initialize DGIM for each new label
     dgimMap ++= labels.filterNot(dgimMap.contains).map((_, Dgim(windowLength, r)))
 
+
     // Update DGIM states across all active labels
     dgimMap ++= dgimMap.map{ case (label, dgim) =>
       val bit = if (labels.contains(label)) 1 else 0
       (label, dgim.update(bit))
     }
 
+
     // Drop empty DGIMs
     dgimMap.retain((label, dgim) => ! dgim.isEmpty)
-  }
-
-  /** Returns a mapping from each inputted label to DGIM approximation of the count of
-    *  observations in previous k positions that included label.
-    *
-    * @param k Positive integer not larger than number of positions in each DGIM window
-    * @param labels Set of labels to include in mapping
-    */
-  private def query(k: Long, labels: Set[String]): Map[String, Long] = {
-    dgimMap
-      .filterKeys(labels.contains)
-      .mapValues(_.query(k))
-      .filter(_._2 > 0)
-      .toMap
   }
 
   /** Returns a mapping from each label observed in DGIM window to DGIM approximation

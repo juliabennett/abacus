@@ -79,12 +79,13 @@ class DgimSpec extends FlatSpec {
     ))
 
     assert(Dgim(3).update(allOnes).buckets == Vector(
+      Bucket(2, 0),
       Bucket(1, 0),
       Bucket(0, 1)
     ))
     assert(Dgim(2).update(allOnes).buckets == Vector(
-      Bucket(0, 0),
-      Bucket(1, 0)
+      Bucket(1, 0),
+      Bucket(0, 0)
     ))
 
     assert(Dgim(4).update(series1).buckets == Vector(
@@ -119,11 +120,10 @@ class DgimSpec extends FlatSpec {
     assert(Dgim(100).update(singleOne).query(3) == 0)
     assert(Dgim(4).update(singleOne).query(3) == 0)
 
-    assert(Dgim(100).update(allOnes).query(0) == 0)
     assert(Dgim(100).update(allOnes).query(1) == 1)
-    assert(Dgim(100).update(allOnes).query(4) == 4)
-    assert(Dgim(100).update(allOnes).query(5) == 4)
-    assert(Dgim(100).update(allOnes).query(50) == 4)
+    assert(Dgim(100).update(allOnes).query(4) == 3)
+    assert(Dgim(100).update(allOnes).query(5) == 6)
+    assert(Dgim(100).update(allOnes).query(50) == 10)
     assert(Dgim(3).update(allOnes).query(2) == 2)
     assert(Dgim(2).update(allOnes).query(2) == 2)
 
