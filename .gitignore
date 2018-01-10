@@ -16,3 +16,6 @@ project/plugins/project/
 .scala_dependencies
 .worksheet
 .idea
+
+# private files
+src/main/resources/secrets.txt
