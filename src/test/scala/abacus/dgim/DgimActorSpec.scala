@@ -22,7 +22,7 @@ class DgimActorSpec extends TestKit(ActorSystem("DgimActorSpec")) with ImplicitS
       k: Long,
       expected: Map[String, Long]): Assertion = {
 
-    val reply = dgimActor ? DgimActor.QueryAll(k)
+    val reply = dgimActor ? DgimActor.QueryAll(Some(k))
     assert(Await.result(reply, 1.seconds) == expected)
   }
 

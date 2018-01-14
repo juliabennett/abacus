@@ -12,7 +12,7 @@ object DgimActor {
   final case class Update(labels: Set[String])
 
   /* Message to ask DgimActor for DGIM states of all active labels. */
-  final case class QueryAll(k: Long)
+  final case class QueryAll(k: Option[Long])
 
   /* Returns a Props for creating DgimActor. */
   def props(windowLength: Long, r: Int): Props =
@@ -31,7 +31,7 @@ class DgimActor(windowLength: Long, r: Int) extends Actor {
   /* Implementation of receive method for communicating with actor. */
   def receive: PartialFunction[Any, Unit] = {
     case Update(labels) => update(labels)
-    case QueryAll(k) => sender ! query(k)
+    case QueryAll(k) => sender ! query(k.getOrElse(windowLength))
   }
 
   // Mutable mapping from labels to Dgim instances managed by Actor
@@ -64,10 +64,10 @@ class DgimActor(windowLength: Long, r: Int) extends Actor {
     *
     * @param k Positive integer not larger than number of positions in each DGIM window
     */
-  private def query(k: Long): Map[String, Long] = {
+  private def query(k: Long): List[(String, Long)] = {
     dgimMap
       .mapValues(_.query(k))
       .filter(_._2 > 0)
-      .toMap
+      .toList
   }
 }
