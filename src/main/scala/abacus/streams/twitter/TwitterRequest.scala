@@ -87,7 +87,8 @@ case class TwitterRequest(
       ',' -> "%2C",
       ':' -> "%3A",
       '&' -> "%26",
-      '#' -> "%23")
+      '#' -> "%23",
+      '@' -> "%40")
 
     s.flatMap { char =>
       if (whiteList.contains(char)) char.toString else translations(char)
