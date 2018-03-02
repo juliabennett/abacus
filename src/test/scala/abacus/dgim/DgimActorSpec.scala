@@ -1,29 +1,33 @@
 package abacus.dgim
 
-import org.scalatest.{Assertion, BeforeAndAfterAll, Matchers, WordSpecLike}
+import scala.concurrent.Await
+import scala.concurrent.duration._
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.pattern.ask
 import akka.testkit.{ImplicitSender, TestKit}
 import akka.util.Timeout
-import scala.concurrent.Await
-import scala.concurrent.duration._
+import org.scalatest.{Assertion, BeforeAndAfterAll, Matchers, WordSpecLike}
 
 class DgimActorSpec extends TestKit(ActorSystem("DgimActorSpec")) with ImplicitSender
   with WordSpecLike with Matchers with BeforeAndAfterAll {
 
+  // Testing utils
   implicit val timeout: Timeout = Timeout(1.seconds)
-
   override def afterAll {
     TestKit.shutdownActorSystem(system)
   }
 
+  /* Wrapper for asserting against query results. */
   def assertQuery(
       dgimActor: ActorRef,
-      k: Long,
-      expected: Map[String, Long]): Assertion = {
+      k: Option[Long],
+      topN: Option[Int],
+      expected: (Long, List[(String, Long)])): Assertion = {
 
-    val reply = dgimActor ? DgimActor.QueryAll(Some(k))
-    assert(Await.result(reply, 1.seconds) == expected)
+    val reply = dgimActor ? DgimActor.QueryAll(k, topN)
+    val result = Await.result(reply, 1.seconds)
+      .asInstanceOf[(Long, List[(String, Long)])]
+    assert(result._1 == expected._1 && result._2.toSet == expected._2.toSet)
   }
 
   "A DgimActor" must {
@@ -46,11 +50,41 @@ class DgimActorSpec extends TestKit(ActorSystem("DgimActorSpec")) with ImplicitS
 
       series.foreach{ labelSet => dgimActor1 ! DgimActor.Update(labelSet) }
 
-      assertQuery(dgimActor1, 5, Map("b"->3, "c"->2, "d"->1, "e"->1))
-      assertQuery(dgimActor1, 4, Map("b"->2, "c"->2, "d"->1, "e"->1))
-      assertQuery(dgimActor1, 3, Map("b"->2, "c"->1, "e"->1))
-      assertQuery(dgimActor1, 2, Map("b"->1, "c"->1, "e"->1))
-      assertQuery(dgimActor1, 1, Map("e"->1))
+      assertQuery(
+        dgimActor1,
+        Some(5),
+        None,
+        (5, List(("b", 3), ("c", 2), ("d", 1), ("e", 1))))
+      assertQuery(
+        dgimActor1,
+        None,
+        None,
+        (5, List(("b", 3), ("c", 2), ("d", 1), ("e", 1))))
+      assertQuery(
+        dgimActor1,
+        None,
+        Some(1),
+        (5, List(("b", 3))))
+      assertQuery(
+        dgimActor1,
+        Some(4),
+        Some(3),
+        (4, List(("b",2), ("c", 2), ("d", 1), ("e", 1))))
+      assertQuery(
+        dgimActor1,
+        Some(3),
+        None,
+        (3, List(("b", 2), ("c", 1), ("e", 1))))
+      assertQuery(
+        dgimActor1,
+        Some(2),
+        None,
+        (2, List(("b", 1), ("c", 1), ("e", 1))))
+      assertQuery(
+        dgimActor1,
+        Some(1),
+        None,
+        (1, List(("e", 1))))
 
 
       // Series with some empty updates
@@ -65,9 +99,21 @@ class DgimActorSpec extends TestKit(ActorSystem("DgimActorSpec")) with ImplicitS
       )
 
       withEmpty.foreach{ labelSet => dgimActor2 ! DgimActor.Update(labelSet) }
-      assertQuery(dgimActor2, 3, Map("d"->1))
-      assertQuery(dgimActor2, 2, Map("d"->1))
-      assertQuery(dgimActor2, 1, Map())
+      assertQuery(
+        dgimActor2,
+        Some(3),
+        None,
+        (3, List(("d", 1))))
+      assertQuery(
+        dgimActor2,
+        Some(2),
+        None,
+        (2, List(("d", 1))))
+      assertQuery(
+        dgimActor2,
+        Some(1),
+        None,
+        (1, List()))
 
 
       // Series with all empty updates
@@ -83,9 +129,21 @@ class DgimActorSpec extends TestKit(ActorSystem("DgimActorSpec")) with ImplicitS
 
       allEmpty.foreach{ labelSet => dgimActor2 ! DgimActor.Update(labelSet) }
 
-      assertQuery(dgimActor2, 3, Map())
-      assertQuery(dgimActor2, 2, Map())
-      assertQuery(dgimActor2, 1, Map())
+      assertQuery(
+        dgimActor2,
+        Some(3),
+        None,
+        (3, List()))
+      assertQuery(
+        dgimActor2,
+        Some(2),
+        None,
+        (2, List()))
+      assertQuery(
+        dgimActor2,
+        Some(1),
+        None,
+        (1, List()))
     }
   }
 }
