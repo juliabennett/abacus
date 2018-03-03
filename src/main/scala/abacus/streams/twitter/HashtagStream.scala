@@ -21,7 +21,7 @@ import abacus.dgim.DgimActor.Update
 case class HashtagStream(topics: List[Topic]) {
 
   /**
-    * Launches live stream of hashtags matching parameters to actor.
+    * Launches live stream of hashtags matching parameters to DgimActor.
     *
     * @return Killswitch for terminating stream
     */
