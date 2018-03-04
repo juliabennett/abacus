@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <title>Abacus</title>
+
+  <link rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/css/bootstrap.min.css"
+      integrity="sha384-Zug+QiDoJOrZ5t4lssLdxGhVrurbmBWopoEl+M6BdEfwnCJZtKxi1KgxUyJq13dy"
+      crossorigin="anonymous">
+  <link href="https://use.fontawesome.com/releases/v5.0.6/css/all.css" rel="stylesheet">
+  <link href="resources/abacus.png" rel="icon">
+  <link href="resources/styles.css" rel="stylesheet">
+
+  <script src="https://d3js.org/d3.v4.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+
+</head>
+
+<body>
+
+  <div class="tooltip"></div>
+
+  <div class="container">
+    <header class="header clearfix">
+      <div class="text-muted">
+        <a href="https://github.com/juliabennett/abacus"><i class="fab fa-github"></i> Abacus </a>
+      </div>
+    </header>
+
+    <main role="main">
+
+      <div class="jumbotron">
+        <h1 class="display-3">Abacus</h1>
+        <p class="lead"> Approximate sliding window counts on streaming data using
+          <a href="http://infolab.stanford.edu/~ullman/mmds/ch4.pdf">DGIM</a>.
+        </p>
+      </div>
+
+      <div class="row marketing content">
+
+        <div class="col-lg-6 counter">
+          <div id="bitcoin">
+            <h3>The last <span class="window-size"></span> bitcoin transactions...</h3>
+            <div class="input-display">
+              <div>k = <span id="kBitcoin">1,000</span> </div>
+              <input id="sliderBitcoin" type="range" min="3" max="6" list="tickmarksBitcoin" value="3">
+              <datalist id="tickmarksBitcoin">
+                <option value="3" label="1000">
+                <option value="4" label="10000">
+                <option value="5" label="100000">
+                <option value="6" label="1000000">
+              </datalist>
+            </div>
+            <svg>
+              <g class="bars"></g>
+              <g class="xaxis"></g>
+              <g class="yaxis"></g>
+              <g class="xaxis-label"><text>Transaction Value In BTC</text></g>
+              <g class="yaxis-label"><text>Approximate Transaction Count</text></g>
+            </svg>
+            <p class="explanation">
+              Approximate histogram of bitcoin transaction values powered by
+              <a href="https://blockchain.info/">blockchain.info</a>.
+              Each bitcoin transaction may split the value across multiple recipients,
+              including "change" back to the sender.
+            </p>
+          </div>
+        </div>
+
+        <div class="col-lg-6 counter">
+          <div  id="trump">
+            <h3>The last <span class="window-size"></span> tweets about Trump...</h3>
+            <div class="input-display">
+              <div>k = <span id="kTrump">1,000</span> </div>
+              <input id="sliderTrump" type="range" min="3" max="9" list="tickmarksTrump" value="3">
+              <datalist id="tickmarksTrump">
+                <option value="3" label="1000">
+                <option value="4" label="10000">
+                <option value="5" label="100000">
+                <option value="6" label="1000000">
+                <option value="7" label="10000000">
+                <option value="8" label="100000000">
+                <option value="9" label="1000000000">
+              </datalist>
+            </div>
+            <svg>
+              <g class="bars"></g>
+              <g class="axis"></g>
+              <g class="axis-label"><text>Approximate Tweet Count</text></g>
+            </svg>
+            <p class="explanation">
+              Approximate histogram of the 25 most common hashtags
+              across sampled tweets about Trump.
+              Tweets provided by Twitter's streaming API.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+    </main>
+
+    <footer class="footer"></footer>
+
+  </div>
+
+</body>
+
+<script src="resources/plot.js"></script>
+
+</html>

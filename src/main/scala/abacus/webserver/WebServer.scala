@@ -10,38 +10,50 @@ import spray.json._
 import abacus.dgim.DgimActor.QueryAll
 
 /**
-  * Akka HTTP webserver handling queries against DgimActor.
+  * Akka HTTP webserver handling queries against DgimActors.
   *
-  * @param dgimActor DgimActor maintaining state
+  * @param dgimActors Mapping from stream names to DgimActors maintaining state
   */
-case class WebServer(dgimActor: ActorRef)(implicit timeout: Timeout) extends HttpApp with Directives {
+case class WebServer(dgimActors: Map[String, ActorRef])(implicit timeout: Timeout)
+    extends HttpApp with Directives {
 
   // Classes handling actor response
-  final case class LabelCount(label: String, count: Long)
-  final case class Counts(labelCounts: List[LabelCount])
+  case class LabelCount(label: String, count: Long)
+  case class Counts(positionsInWindow: Long, labelCounts: List[LabelCount])
 
   // Configure JSON marshalling
   import JsonFormatSupport._
   object JsonFormatSupport {
     import DefaultJsonProtocol._
     implicit val labelCountFormat: RootJsonFormat[LabelCount] = jsonFormat2(LabelCount)
-    implicit val countsFormat: RootJsonFormat[Counts] = jsonFormat1(Counts)
+    implicit val countsFormat: RootJsonFormat[Counts] = jsonFormat2(Counts)
   }
 
-  // Define single GET route for executing queries
-  override def routes: Route =
-    path("counts") {
+  // Routes
+  override def routes: Route = {
+    path("") {
+      getFromResource("index.html")
+    } ~
+    path("resources" / Segment) { name =>
+      getFromResource(s"$name")
+    } ~
+    path("counts" / Segment) { name =>
       get {
-        parameters('k.as[Long].?) { k =>
-          val future = dgimActor ? QueryAll(k)
+        parameters('k.as[Long].?, 'topN.as[Int].?) { (k, topN) =>
+          println(k)
+          println(topN)
+          val future = dgimActors(name) ? QueryAll(k, topN)
           val result = Await.result(future, timeout.duration)
+            .asInstanceOf[(Long, List[(String, Long)])]
 
-          val labelCounts = result.asInstanceOf[List[(String, Long)]]
-              .map(tup => LabelCount(tup._1, tup._2))
-
-          complete(Counts(labelCounts))
+          complete(
+            Counts(
+              result._1,
+              result._2.map(tup => LabelCount(tup._1, tup._2))
+            ))
         }
       }
     }
+  }
 
 }

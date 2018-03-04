@@ -89,7 +89,7 @@ case class HashtagStream(topics: List[Topic]) {
   * @param keywords Lowercase track terms in Twitter's filter API
   */
 case class Topic(name: String, keywords: List[String])(implicit system: ActorSystem) {
-  val dgimActor: ActorRef = system.actorOf(Props(classOf[DgimActor], 1000000L, 2))
+  val dgimActor: ActorRef = system.actorOf(Props(classOf[DgimActor], 1000000000L, 2))
 
   def toTuple: (String, ActorRef) = (name, dgimActor)
 }
@@ -105,6 +105,7 @@ case class Tweet(text: String) {
   def hashtags: Set[String] =
     text.split("\\s+")
       .collect{case t if t.startsWith("#") => t.replaceAll("[^A-Za-z0-9#]", "")}
+      .map(_.toLowerCase)
       .filterNot(_ == "#")
       .toSet
 }
