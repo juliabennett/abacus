@@ -15,8 +15,8 @@ object DgimActor {
   final case class QueryAll(k: Option[Long], topN: Option[Int])
 
   /* Returns a Props for creating DgimActor. */
-  def props(windowLength: Long, r: Int): Props =
-    Props(new DgimActor(windowLength: Long, r: Int))
+  def props(name: String, windowLength: Long, r: Int): Props =
+    Props(new DgimActor(name: String, windowLength: Long, r: Int))
 }
 
 /**
@@ -25,13 +25,18 @@ object DgimActor {
   * @param windowLength Number of positions in each DGIM window.
   * @param r DGIM precision parameter, where higher values of r have smaller error
   */
-class DgimActor(windowLength: Long, r: Int) extends Actor {
+class DgimActor(name: String, windowLength: Long, r: Int) extends Actor with akka.actor.ActorLogging {
+
   import DgimActor._
 
   /* Implementation of receive method for communicating with actor. */
   def receive: PartialFunction[Any, Unit] = {
-    case Update(labels) => update(labels)
-    case QueryAll(k, topN) => sender ! query(k.getOrElse(windowLength), topN.getOrElse(25))
+    case Update(labels) =>
+      log.debug(s"$name - Update: $labels")
+      update(labels)
+    case QueryAll(k, topN) =>
+      log.debug(s"$name - Query: k=$k, topN=$topN")
+      sender ! query(k.getOrElse(windowLength), topN.getOrElse(25))
   }
 
   // Mutable variable for updating latest position

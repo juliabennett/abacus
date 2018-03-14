@@ -6,6 +6,7 @@ import akka.actor.{ActorRef, ActorSystem, Props, Terminated}
 import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
+
 import abacus.dgim.DgimActor
 import abacus.streams.bitcoin.TransactionStream
 import abacus.streams.twitter.{HashtagStream, Topic}
@@ -27,7 +28,7 @@ object Main {
     val twitterKillSwitch = HashtagStream(topics).run
 
     // Launch bitcoin stream
-    val bitcoinActor = system.actorOf(Props(classOf[DgimActor], 1000000L, 2))
+    val bitcoinActor = system.actorOf(Props(classOf[DgimActor], "BITCOIN", 1000000L, 2))
     val bitcoinKillSwitch = TransactionStream(bitcoinActor).run
 
     // Open webserver

@@ -19,3 +19,4 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-http-spray-json" % "10.1.0-RC1"
 )
 libraryDependencies += "io.spray" %%  "spray-json" % "1.3.3"
+libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3"
