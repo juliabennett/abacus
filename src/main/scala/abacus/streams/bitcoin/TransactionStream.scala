@@ -18,7 +18,7 @@ import abacus.dgim.DgimActor.Update
 
 case class TransactionStream(dgimActor: ActorRef) {
 
-  // Initialize Json formats
+  // Initialize json formats
   case class Output(value: Long)
   case class Transaction(out: List[Output])
   case class Record(x: Transaction)

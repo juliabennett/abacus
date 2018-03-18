@@ -13,8 +13,8 @@ import akka.http.scaladsl.model._
   * Request to Twitter API handling authorization.
   *
   * @param requestParameters API request parameters
-  * @param baseUrl Endpoint URL, defaults to filter endpoint
-  * @param usePostRequest Determines if request type is GET or POST, defaults to False
+  * @param baseUrl Endpoint URL
+  * @param usePostRequest Determines if request type is GET or POST
   */
 case class TwitterRequest(
   requestParameters: Map[String, String],

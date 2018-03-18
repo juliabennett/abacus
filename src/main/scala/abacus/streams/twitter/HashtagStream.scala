@@ -2,7 +2,7 @@ package abacus.streams.twitter
 
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
-import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.stream.scaladsl._
@@ -12,21 +12,29 @@ import org.slf4j
 import org.slf4j.LoggerFactory
 import spray.json._
 import spray.json.DefaultJsonProtocol._
-import abacus.dgim.DgimActor
 import abacus.dgim.DgimActor.Update
 
 /**
   * Live stream of hashtags from Twitter's filter endpoint to DgimActors.
   *
-  * @param topics Topics to be used in querying Twitter's filter API
+  * @param topics Search topics to be used in querying Twitter's filter API
   */
-case class HashtagStream(topics: List[Topic]) {
+case class HashtagStream(topics: List[SearchTopic]) {
 
   // Initialize logger
   val log: slf4j.Logger = LoggerFactory.getLogger(classOf[HashtagStream])
 
+  // Initialize json format of standard Tweet message
+  implicit val tweetFormat: RootJsonFormat[Tweet] = jsonFormat1(Tweet)
+
+  // Initialize json format of limit message to disambiguate from genuine parsing errors
+  case class LimitDetails(track: Long, timestamp_ms: String)
+  case class LimitMessage(limit: LimitDetails)
+  implicit val limitDetailsFormat: RootJsonFormat[LimitDetails] = jsonFormat2(LimitDetails)
+  implicit val limitMessageFormat: RootJsonFormat[LimitMessage] = jsonFormat1(LimitMessage)
+
   /**
-    * Launches live stream of hashtags matching parameters to DgimActor.
+    * Launches live stream of hashtags matching topics to DgimActors.
     *
     * @return Killswitch for terminating stream
     */
@@ -53,7 +61,7 @@ case class HashtagStream(topics: List[Topic]) {
         maxBackoff =  320.seconds,
         randomFactor = 0.2) { () => responseStream}
 
-    // Transforms chunked data into individual tweets
+    // Transforms chunked data into stream of json
     val framing = Framing.delimiter(
         ByteString("\n"),
         maximumFrameLength = 100000,
@@ -63,6 +71,7 @@ case class HashtagStream(topics: List[Topic]) {
           log.warn(s"TWITTER - Framing failure $failure")
           Supervision.Restart }))
 
+    // Transforms json to tweets
     val parsing  = Flow[ByteString]
       .map(jsonToTweet)
       .withAttributes(
@@ -83,19 +92,24 @@ case class HashtagStream(topics: List[Topic]) {
       .run()
   }
 
-  /* Parses json ByteString to Tweet */
+  /**
+    * Simple wrapper for Tweet returned by Twitter's filter API.
+    *
+    * @param text Body of tweet
+    */
+  case class Tweet(text: String) {
+
+    /* Returns set of hashtags from body of tweet. */
+    def hashtags: Set[String] =
+      text.split("\\s+")
+        .collect{case t if t.startsWith("#") => t.replaceAll("[^A-Za-z0-9#]", "")}
+        .map(_.toLowerCase)
+        .filterNot(_ == "#")
+        .toSet
+  }
+
+  /* Parses json byte string to Tweet */
   private def jsonToTweet(json: ByteString): Option[Tweet] = {
-
-    // Initialize format of standard Tweet message
-    implicit val tweetFormat: RootJsonFormat[Tweet] = jsonFormat1(Tweet)
-
-    // Initialize format of limit message to disambiguate from genuine parsing errors
-    case class LimitDetails(track: Long, timestamp_ms: String)
-    case class LimitMessage(limit: LimitDetails)
-    implicit val limitDetailsFormat: RootJsonFormat[LimitDetails] = jsonFormat2(LimitDetails)
-    implicit val limitMessageFormat: RootJsonFormat[LimitMessage] = jsonFormat1(LimitMessage)
-
-    // Parse json and return Tweet as an option
     Try(json.utf8String.parseJson.convertTo[Either[Tweet, LimitMessage]]) match {
       case Success(Left(tweet)) => Some(tweet)
       case Success(Right(limitMessage)) => None
@@ -112,41 +126,12 @@ case class HashtagStream(topics: List[Topic]) {
         log.debug(s"TWITTER - Processing tweet")
         val text = tweet.text.toLowerCase()
         val hashtags = tweet.hashtags
-
         topics.foreach{ topic =>
-          var relevant = topic.keywords.map(text.contains(_)).reduce(_ || _)
-          if (relevant) topic.dgimActor ! Update(hashtags)
+          val relevant = topic.keywords.map(text.contains(_)).reduce(_ || _)
+          val filteredHashtags = hashtags diff topic.keywords.map("#" + _).toSet
+          if (relevant) topic.dgimActor ! Update(filteredHashtags)
         }
       case _ => log.debug(s"TWITTER - Ignoring message")
     }
 
-}
-
-/**
-  * Search topic against Twitter's filter API, maintaining DgimActor
-  *   that listens for hashtag stream.
-  *
-  * @param name Name of topic
-  * @param keywords Lowercase track terms in Twitter's filter API
-  */
-case class Topic(name: String, keywords: List[String])(implicit system: ActorSystem) {
-  val dgimActor: ActorRef = system.actorOf(Props(classOf[DgimActor], "TWITTER", 1000000000L, 2))
-
-  def toTuple: (String, ActorRef) = (name, dgimActor)
-}
-
-/**
-  * Simple wrapper for Tweet returned by Twitter's filter API.
-  *
-  * @param text Body of tweet
-  */
-case class Tweet(text: String) {
-
-  /* Returns set of hashtags from body of tweet. */
-  def hashtags: Set[String] =
-    text.split("\\s+")
-      .collect{case t if t.startsWith("#") => t.replaceAll("[^A-Za-z0-9#]", "")}
-      .map(_.toLowerCase)
-      .filterNot(_ == "#")
-      .toSet
 }

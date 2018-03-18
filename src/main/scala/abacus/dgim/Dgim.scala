@@ -1,7 +1,7 @@
 package abacus.dgim
 
 /** Data structure storing state of Datar-Gionis-Indyk-Motwani (DGIM) algorithm
-  *  for approximating number of ones in a window of a binary stream.
+  * for approximating number of ones in a window of a binary stream.
   *
   * @param windowLen Number of positions in window
   * @param r DGIM precision parameter, where higher values of r have smaller error
@@ -51,6 +51,7 @@ case class Dgim(windowLen: Long, r: Int = 2, currentStreamPos: Long = -1, bucket
     scanAndCount(k, buckets)
   }
 
+  /* Returns True if DGIM has no record of any 1 elements within window */
   def isEmpty: Boolean = buckets.isEmpty
 
   override def toString: String = {
@@ -59,7 +60,7 @@ case class Dgim(windowLen: Long, r: Int = 2, currentStreamPos: Long = -1, bucket
   }
 
   /* Returns inputted DGIM buckets plus a new bucket of size one at next position.
-      Completes merge process to maintain DGIM conditions. */
+     Completes merge process to maintain DGIM conditions. */
   private def bucketsPlusOne(currentBuckets: Vector[Bucket], nextPosition: Long): Vector[Bucket] = {
     @scala.annotation.tailrec
     def joinBucketListSegments(bucketListTail: Vector[Bucket],
@@ -70,7 +71,7 @@ case class Dgim(windowLen: Long, r: Int = 2, currentStreamPos: Long = -1, bucket
         case first +: second +: tail if first.sizeExp == second.sizeExp =>
           if (currentSizeCounter == r-2) {
             val mergedBucket = first.merge(second, windowLen, currentStreamPos)
-            joinBucketListSegments(tail, mergedBucket, bucketListHead :+ middleBucket, 0)
+            joinBucketListSegments(tail, mergedBucket, bucketListHead :+ middleBucket)
           } else {
             joinBucketListSegments(second +: tail, first, bucketListHead :+ middleBucket, currentSizeCounter + 1)
           }

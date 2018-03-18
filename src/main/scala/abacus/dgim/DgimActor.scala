@@ -46,7 +46,7 @@ class DgimActor(name: String, windowLength: Long, r: Int) extends Actor with akk
   private val dgimMap: mutable.Map[String, Dgim] = mutable.Map()
 
   /** Updates DGIM states across all active labels, adding 1 to the binary stream
-    *  of each observed label and 0 to the binary stream of each unobserved label.
+    * of each observed label and 0 to the binary stream of each unobserved label.
     *
     * @param labels Observed labels from latest position
     */
@@ -68,11 +68,11 @@ class DgimActor(name: String, windowLength: Long, r: Int) extends Actor with akk
   }
 
   /** Returns a mapping from each label observed in DGIM window to DGIM approximation
-    *  of the count of observations in previous k positions that included label.
+    * of the count of observations in previous k positions that included label.
     *
     * @param k Positive integer not larger than number of positions in each DGIM window
     * @return Tuple consisting of number of positions within range and mapping from
-    *           labels to approximate counts
+    *         labels to approximate counts
     */
   private def query(k: Long, topN: Int): (Long, List[(String, Long)]) = {
     require(topN > 0)

@@ -30,13 +30,13 @@ class DgimActorSpec extends TestKit(ActorSystem("DgimActorSpec")) with ImplicitS
     assert(result._1 == expected._1 && result._2.toSet == expected._2.toSet)
   }
 
-  "A DgimActor" must {
+  "DgimActor" should {
 
     "track DGIM states of labels appearing in stream" in {
 
       // Normal series
 
-      val dgimActor1 = system.actorOf(Props(classOf[DgimActor], 5L, 2))
+      val dgimActor1 = system.actorOf(Props(classOf[DgimActor], "TESTING", 5L, 2))
 
       val series: List[Set[String]] = List(
         Set("a", "b", "c"),
@@ -89,7 +89,7 @@ class DgimActorSpec extends TestKit(ActorSystem("DgimActorSpec")) with ImplicitS
 
       // Series with some empty updates
 
-      val dgimActor2 = system.actorOf(Props(classOf[DgimActor], 3L, 2))
+      val dgimActor2 = system.actorOf(Props(classOf[DgimActor], "TESTING", 3L, 2))
 
       val withEmpty: List[Set[String]] = List(
         Set("a", "b", "c"),
@@ -118,7 +118,7 @@ class DgimActorSpec extends TestKit(ActorSystem("DgimActorSpec")) with ImplicitS
 
       // Series with all empty updates
 
-      val dgimActor3 = system.actorOf(Props(classOf[DgimActor], 3L, 2))
+      val dgimActor3 = system.actorOf(Props(classOf[DgimActor], "TESTING", 3L, 2))
 
       val allEmpty: List[Set[String]] = List(
         Set(),

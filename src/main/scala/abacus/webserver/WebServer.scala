@@ -38,11 +38,11 @@ case class WebServer(dgimActors: Map[String, ActorRef])(implicit timeout: Timeou
   override def routes: Route = {
     path("") {
       log.info("Fetching index.html")
-      getFromResource("index.html")
+      getFromResource("www/index.html")
     } ~
     path("resources" / Segment) { name =>
       log.info(s"Fetching $name from resources")
-      getFromResource(s"$name")
+      getFromResource(s"www/$name")
     } ~
     path("counts" / Segment) { name =>
       get {

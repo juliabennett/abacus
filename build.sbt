@@ -1,4 +1,4 @@
-name := "streamProcessing"
+name := "abacus"
 
 version := "0.1"
 

@@ -1,7 +1,7 @@
 $(document).ready(function() {
 
   // Initialize variables
-  var kTrump = 1000,
+  var kTrump = 10000,
     kBitcoin = 1000,
     bitcoinData = {},
     trumpData = {};
@@ -139,7 +139,7 @@ $(document).ready(function() {
     var transitionMs = 250,
       chartDiv = document.getElementById("bitcoin"),
       counts = bitcoinData.labelCounts;
-    var margin = {top: 50, right: 10, bottom: 100, left: 40},
+    var margin = {top: 50, right: 10, bottom: 100, left: 65},
       chartHeight = 700,
       barMaxHeight = chartHeight - margin.top - margin.bottom,
       barWidth = (+chartDiv.clientWidth - margin.left - margin.right)/counts.length;
@@ -180,8 +180,8 @@ $(document).ready(function() {
         .attr("text-anchor", "end")
         .attr("font-size", "16px");
     d3.select(chartDiv).select(".yaxis-label").selectAll("text")
- 	    .attr("x", margin.left - 90)
- 	    .attr("y", margin.top - 12)
+ 	    .attr("x", -1*margin.top)
+ 	    .attr("y", margin.left)
         .attr("dy", ".71em")
         .attr("transform", "rotate(-90)")
         .attr("text-anchor", "end")
