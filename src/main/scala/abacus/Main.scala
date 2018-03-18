@@ -33,7 +33,7 @@ object Main {
     // Open webserver
     val dgimActors: Map[String, ActorRef] =
       (("bitcoin", bitcoinActor) :: topics.map(_.toTuple)).toMap // Supports multiple Twitter topics but not currently used
-    WebServer(dgimActors).startServer("localhost", 8080, system)
+    WebServer(dgimActors).startServer("0.0.0.0", 8080, system)
 
     // Shutdown once webserver closes (on ENTER for now)
     twitterKillSwitch.shutdown()
