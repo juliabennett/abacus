@@ -28,7 +28,7 @@ object Main {
 
     // Launch bitcoin stream
     val bitcoinActor = system.actorOf(Props(classOf[DgimActor], "BITCOIN", 1000000L, 25))
-    val bitcoinKillSwitch = TransactionStream(bitcoinActor).run
+    TransactionStream(bitcoinActor).run
 
     // Open webserver
     val dgimActors: Map[String, ActorRef] =
@@ -37,7 +37,6 @@ object Main {
 
     // Shutdown once webserver closes (on ENTER for now)
     twitterKillSwitch.shutdown()
-    bitcoinKillSwitch.shutdown()
     val poolShutdown: Future[Unit] = Http().shutdownAllConnectionPools
     Await.result(poolShutdown, timeout.duration)
     val systemShutdown: Future[Terminated] = system.terminate()

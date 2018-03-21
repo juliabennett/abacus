@@ -29,12 +29,8 @@ case class TransactionStream(dgimActor: ActorRef) {
   // Initialize logger
   val log: slf4j.Logger = LoggerFactory.getLogger(classOf[TransactionStream])
 
-  /**
-    * Launches live stream of bitcoin transactions to DgimActor.
-    *
-    * @return Killswitch for terminating stream
-    */
-  def run(implicit system: ActorSystem, materializer: ActorMaterializer): UniqueKillSwitch = {
+  /* Launches live stream of bitcoin transactions to DgimActor. */
+  def run(implicit system: ActorSystem, materializer: ActorMaterializer): Unit = {
     import system.dispatcher
 
     // Process both strict and streamed messages
@@ -46,7 +42,7 @@ case class TransactionStream(dgimActor: ActorRef) {
         case message: TextMessage.Streamed =>
           log.debug("BITCOIN - Received streamed transaction")
           val reduced = message.textStream.runWith(Sink.reduce[String](_ + _))
-          val text = Await.result(reduced, 10.seconds)
+          val text = Await.result(reduced, 15.seconds)
           update(text)
         case _ => log.warn("BITCOIN - Message receipt failed")
       }.withAttributes(
@@ -62,30 +58,29 @@ case class TransactionStream(dgimActor: ActorRef) {
     // Websocket connection to blockchain.info
     val webSocketFlow: Flow[Message, Message, Future[WebSocketUpgradeResponse]] =
       Http().webSocketClientFlow(WebSocketRequest("wss://ws.blockchain.info/inv"))
-        .withAttributes(ActorAttributes.supervisionStrategy(failure => {
-          log.warn(s"BITCOIN - Restarting due to websocket connection failure $failure")
-          Supervision.Restart
-        }))
 
     // Run graph with killswitch
-    val (upgradeResponse, killswitch) =
+    val (upgradeResponse, promise) =
       outgoing
         .viaMat(webSocketFlow)(Keep.right)
-        .viaMat(KillSwitches.single)(Keep.both)
-        .toMat(incoming)(Keep.left)
+        .toMat(incoming)(Keep.both)
         .run()
 
     // Throw exception on unsuccessful connection attempts
     val connected = upgradeResponse.flatMap { upgrade =>
       if (upgrade.response.status == StatusCodes.SwitchingProtocols) {
+        log.info("BITCOIN - Connection established")
         Future.successful(Done)
       } else {
-        throw new RuntimeException(s"BITCOIN - Connection failed ${upgrade.response.status}")
+        log.warn(s"BITCOIN - Connection failed ${upgrade.response.status}")
+        Thread.sleep(10000) // Manual backoff strategy for now of simply waiting 10 seconds
+        Future.successful(Done)
       }
     }
-    connected.onComplete(_ => log.info("BITCOIN - Connection established"))
+    connected.onComplete(_ => log.info("BITCOIN - Connection attempt complete"))
 
-    killswitch
+    // Manually restart connection when fails or closes
+    promise.onComplete(_ => run)
   }
 
   /* Updates DgimActor with transaction value. */

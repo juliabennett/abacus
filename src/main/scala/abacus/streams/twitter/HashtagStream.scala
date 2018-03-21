@@ -41,25 +41,26 @@ case class HashtagStream(topics: List[SearchTopic]) {
   def run(implicit system: ActorSystem, materializer: ActorMaterializer): UniqueKillSwitch = {
 
     // Streaming response from HTTP request
-    val params = Map(
-      "track" -> topics.map(topic => topic.keywords.mkString(",")).mkString(","),
-      "language" -> "en")
-    val responseStream = Source.single((TwitterRequest(params, usePostRequest=true).request, -1))
-      .via(Http().superPool())
-      .via(Flow[(Try[HttpResponse], Int)].flatMapConcat{
-        case (Success(response), _) =>
-          log.debug("TWITTER - Received message chunk")
-          response.entity.withoutSizeLimit.dataBytes
-        case (Failure(e), _) =>
-          log.warn(s"TWITTER - Restarting due to failed request ${e.getMessage}")
-          throw new RuntimeException})
-
-    // Backoff strategy to handle closed or failed requests
-    val restartSource = RestartSource
-      .withBackoff(
-        minBackoff = 5.seconds,
-        maxBackoff =  320.seconds,
-        randomFactor = 0.2) { () => responseStream}
+    val restartSource = RestartSource.withBackoff(
+      minBackoff = 5.seconds,
+      maxBackoff =  320.seconds,
+      randomFactor = 0.2
+    ) { () => {
+      Source.single((TwitterRequest(requestParams).request, -1))
+        .via(Http().superPool())
+        .via(Flow[(Try[HttpResponse], Int)].flatMapConcat {
+          case (Success(response), _) if response.status == StatusCodes.OK =>
+            log.info(s"TWITTER - Connection open with status ${response.status}")
+            response.entity.withoutSizeLimit.dataBytes
+          case (Success(response), _) =>
+            log.warn(s"TWITTER - Received status ${response.status}")
+            throw new RuntimeException
+          case (Failure(e), _) =>
+            log.warn(s"TWITTER - Restarting due to failed request ${e.getMessage}")
+            throw new RuntimeException
+        })
+      }
+    }
 
     // Transforms chunked data into stream of json
     val framing = Framing.delimiter(
@@ -133,5 +134,11 @@ case class HashtagStream(topics: List[SearchTopic]) {
         }
       case _ => log.debug(s"TWITTER - Ignoring message")
     }
+
+  /* Returns request parameters generated from topics */
+  private def requestParams: Map[String, String] = {
+    val track = topics.map(topic => topic.keywords.mkString(",")).mkString(",")
+    Map("track"->track, "language"->"en")
+  }
 
 }
