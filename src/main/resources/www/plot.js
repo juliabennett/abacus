@@ -25,8 +25,8 @@ $(document).ready(function() {
   });
 
   // Update logic
-  setInterval(updateTrump, 500);
-  setInterval(updateBitcoin, 500);
+  setInterval(updateTrump, 1000);
+  setInterval(updateBitcoin, 1000);
 
   // Redraw on resize
   window.addEventListener("resize", function() {
@@ -231,7 +231,7 @@ $(document).ready(function() {
     if (display) {
       d3.select(element).style("fill-opacity", "0.7");
       tooltip
-          .html("<b>" + d.label + "</b> <br> Approximate Count: " + d.count)
+          .html("<b>" + d.label + "</b> <br> Approximate Count: " + d3.format(",d")(d.count))
           .style("left", (d3.event.pageX) + "px")
           .style("top", (d3.event.pageY - 28) + "px");
       tooltip.transition().duration(50).style("opacity", .9);
