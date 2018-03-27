@@ -76,16 +76,19 @@ class DgimActor(name: String, windowLength: Long, r: Int) extends Actor with akk
     */
   private def query(k: Long, topN: Int): (Long, List[(String, Long)]) = {
     require(topN > 0)
-
     val counts = dgimMap.mapValues(_.query(k)).toList
-      .filter(_._2 > 0)
-      .sortBy(-1*_._2)
-
-    val cutoff = if (counts.length <= topN) -1 else counts(topN - 1)._2
-    val pairs = counts
-      .filter(_._2 >= cutoff)
-      .map(tup => (tup._1, tup._2))
-
-    (positionsInWindow.min(k), pairs)
+    val cutoff = topNCutoff(counts, topN).max(1)
+    (positionsInWindow.min(k), counts.filter(_._2 >= cutoff))
   }
+
+  /* Returns Nth largest count from an unsorted list of count tuples in linear time. */
+  private def topNCutoff(elements: List[(String, Long)], topN: Int): Long = {
+    val topNElements = elements.foldLeft(List(): List[Long])((topNAcc, element) => {
+      if (topNAcc.size < topN) (element._2 :: topNAcc).sorted
+      else if (element._2 <= topNAcc.head) topNAcc
+      else (element._2 :: topNAcc.tail).sorted
+    })
+    if (topNElements.isEmpty) -1 else topNElements.head
+  }
+
 }
