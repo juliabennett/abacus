@@ -139,7 +139,7 @@ $(document).ready(function() {
     var transitionMs = 250,
       chartDiv = document.getElementById("bitcoin"),
       counts = bitcoinData.labelCounts;
-    var margin = {top: 50, right: 10, bottom: 100, left: 65},
+    var margin = {top: 50, right: 10, bottom: 110, left: 65},
       chartHeight = 700,
       barMaxHeight = chartHeight - margin.top - margin.bottom,
       barWidth = (+chartDiv.clientWidth - margin.left - margin.right)/counts.length;
