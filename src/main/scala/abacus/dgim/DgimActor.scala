@@ -55,7 +55,10 @@ class DgimActor(name: String, windowLength: Long, r: Int) extends Actor with akk
     if (positionsInWindow < windowLength) positionsInWindow += 1
 
     // Initialize DGIM for each new label
-    dgimMap ++= labels.filterNot(dgimMap.contains).map((_, Dgim(windowLength, r)))
+    dgimMap ++= labels.filterNot(dgimMap.contains).map{ label =>
+      log.info(s"$name - New DGIM: $label, Total DGIM count: ${dgimMap.size}")
+      (label, Dgim(windowLength, r))
+    }
 
     // Update DGIM states across all active labels
     dgimMap ++= dgimMap.map{ case (label, dgim) =>

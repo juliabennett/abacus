@@ -6,27 +6,23 @@ $(document).ready(function() {
     bitcoinData = {},
     trumpData = {};
 
-  // Initial setup
-  updateTrump();
-  updateBitcoin();
+  // Update logic
+  updateTrump(true);
+  updateBitcoin(true);
 
   // Trump input handling
   $('#sliderTrump').change(function(){
     kTrump = Math.pow(10, this.value);
     $('#kTrump').html(d3.format(",d")(kTrump));
-    updateTrump();
+    updateTrump(false);
   });
 
   // Bitcoin input handling
   $('#sliderBitcoin').change(function(){
     kBitcoin = Math.pow(10, this.value);
     $('#kBitcoin').html(d3.format(",d")(kBitcoin));
-    updateBitcoin();
+    updateBitcoin(false);
   });
-
-  // Update logic
-  setInterval(updateTrump, 1000);
-  setInterval(updateBitcoin, 1000);
 
   // Redraw on resize
   window.addEventListener("resize", function() {
@@ -35,18 +31,24 @@ $(document).ready(function() {
   });
 
   // Trump update wrapper
-  function updateTrump(){
+  function updateTrump(repeat) {
     $.get("counts/trump?k=" + kTrump, function(data) {
       trumpData = data;
       drawTrump();
+      if (repeat) {
+        setTimeout(function() { updateTrump(true); }, 1000);
+      }
     });
   }
 
   // Bitcoin update wrapper
-  function updateBitcoin(){
+  function updateBitcoin(repeat) {
     $.get("counts/bitcoin?k=" + kBitcoin, function(data) {
       bitcoinData = data;
       drawBitcoin();
+      if (repeat) {
+        setTimeout(function() { updateBitcoin(true); }, 1000);
+      }
     });
   }
 
@@ -54,7 +56,7 @@ $(document).ready(function() {
   function drawTrump() {
 
     // Define parameters
-    var transitionMs = 250,
+    var transitionMs = 100,
       chartDiv = document.getElementById("trump"),
       counts = trumpData.labelCounts;
     var barHeight = 25,
@@ -136,7 +138,7 @@ $(document).ready(function() {
   function drawBitcoin() {
 
     // Define parameters
-    var transitionMs = 250,
+    var transitionMs = 100,
       chartDiv = document.getElementById("bitcoin"),
       counts = bitcoinData.labelCounts;
     var margin = {top: 50, right: 10, bottom: 110, left: 65},
