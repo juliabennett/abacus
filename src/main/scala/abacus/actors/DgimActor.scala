@@ -1,7 +1,8 @@
-package abacus.dgim
+package abacus.actors
 
 import scala.collection.mutable
 import akka.actor.{Actor, Props}
+import abacus.dgim.Dgim
 
 /**
   * Companion object declaring DgimActor messages and props.

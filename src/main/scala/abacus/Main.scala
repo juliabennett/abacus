@@ -6,7 +6,7 @@ import akka.actor.{ActorRef, ActorSystem, Props, Terminated}
 import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
-import abacus.dgim.DgimActor
+import abacus.actors.DgimActor
 import abacus.streams.bitcoin.TransactionStream
 import abacus.streams.twitter.{HashtagStream, SearchTopic}
 import abacus.webserver.WebServer

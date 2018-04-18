@@ -1,7 +1,7 @@
 package abacus.streams.twitter
 
 import akka.actor.{ActorRef, ActorSystem, Props}
-import abacus.dgim.DgimActor
+import abacus.actors.DgimActor
 
 /**
   * Search topic against Twitter's filter API, maintaining DgimActor that listens for hashtag stream.

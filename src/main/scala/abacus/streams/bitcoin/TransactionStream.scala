@@ -14,7 +14,7 @@ import org.slf4j
 import org.slf4j.LoggerFactory
 import spray.json._
 import spray.json.DefaultJsonProtocol._
-import abacus.dgim.DgimActor.Update
+import abacus.actors.DgimActor.Update
 
 case class TransactionStream(dgimActor: ActorRef) {
 

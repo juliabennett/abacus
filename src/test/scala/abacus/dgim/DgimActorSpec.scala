@@ -7,6 +7,7 @@ import akka.pattern.ask
 import akka.testkit.{ImplicitSender, TestKit}
 import akka.util.Timeout
 import org.scalatest.{Assertion, BeforeAndAfterAll, Matchers, WordSpecLike}
+import abacus.actors.DgimActor
 
 class DgimActorSpec extends TestKit(ActorSystem("DgimActorSpec")) with ImplicitSender
   with WordSpecLike with Matchers with BeforeAndAfterAll {

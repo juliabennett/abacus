@@ -9,7 +9,7 @@ import akka.util.Timeout
 import org.slf4j
 import org.slf4j.LoggerFactory
 import spray.json._
-import abacus.dgim.DgimActor.QueryAll
+import abacus.actors.DgimActor.QueryAll
 
 /**
   * Akka HTTP webserver handling queries against DgimActors.
