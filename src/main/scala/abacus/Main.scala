@@ -27,7 +27,8 @@ object Main {
     val twitterKillSwitch = HashtagStream(topics).run
 
     // Launch bitcoin stream
-    val bitcoinActor = system.actorOf(Props(classOf[DgimActor], "BITCOIN", 1000000L, 25))
+    val bitcoinActor = system.actorOf(Props(classOf[DgimActor], "BITCOIN", 1000000L, 25)
+      .withDispatcher("prio-dispatcher"))
     TransactionStream(bitcoinActor).run
 
     // Open webserver

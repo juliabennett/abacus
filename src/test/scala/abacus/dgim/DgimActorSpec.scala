@@ -32,6 +32,18 @@ class DgimActorSpec extends TestKit(ActorSystem("DgimActorSpec")) with ImplicitS
 
   "DgimActor" should {
 
+    "prioritize query messages over updates" in {
+
+      val dgimActor = system.actorOf(Props(classOf[DgimActor], "TESTING", 5L, 2)
+        .withDispatcher("prio-dispatcher"))
+
+      dgimActor ! DgimActor.Update(Set("a"))
+      assertQuery(dgimActor, None, None, (0, List()))
+      Thread.sleep(1000)
+      assertQuery(dgimActor, None, None, (1, List(("a", 1))))
+
+    }
+
     "track DGIM states of labels appearing in stream" in {
 
       // Normal series

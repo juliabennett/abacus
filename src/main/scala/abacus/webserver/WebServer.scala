@@ -47,7 +47,7 @@ case class WebServer(dgimActors: Map[String, ActorRef])(implicit timeout: Timeou
     path("counts" / Segment) { name =>
       get {
         parameters('k.as[Long].?, 'topN.as[Int].?) { (k, topN) =>
-          log.debug(s"Querying $name: k=$k, topN=$topN")
+          log.info(s"Querying $name: k=$k, topN=$topN")
           val future = dgimActors(name) ? QueryAll(k, topN)
           val result = Await.result(future, timeout.duration)
             .asInstanceOf[(Long, List[(String, Long)])]

@@ -10,7 +10,8 @@ import abacus.dgim.DgimActor
   * @param keywords Lowercase track terms in Twitter's filter API
   */
 case class SearchTopic(name: String, keywords: List[String])(implicit system: ActorSystem) {
-  val dgimActor: ActorRef = system.actorOf(Props(classOf[DgimActor], "TWITTER", 1000000L, 25))
+  val dgimActor: ActorRef = system.actorOf(Props(classOf[DgimActor], "TWITTER", 1000000L, 25)
+    .withDispatcher("prio-dispatcher"))
 
   def toTuple: (String, ActorRef) = (name, dgimActor)
 }
