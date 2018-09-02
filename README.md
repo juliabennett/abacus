@@ -1,6 +1,6 @@
 # abacus
 
-Approximate sliding window counts on streaming data. See it in action at [juliaben.net/t/abacus](http://juliaben.net/t/abacus/).
+Approximate sliding window counts on streaming data.
 
 ## Description 
 
